@@ -1,5 +1,6 @@
 const form = document.querySelector('form')
 const nameField = document.querySelector('#name')
+const emailField = document.querySelector('#email')
 const jobRoleField = document.querySelector('#title')
 const otherJobRoleField = jobRoleField.nextElementSibling
 const tshirtDesignField = document.querySelector('#design')
@@ -10,6 +11,9 @@ const activitiesCost = document.querySelector('#activities-cost')
 // const paymentFieldset = document.querySelector('fieldset.payment-methods')
 const paymentTypes = document.querySelectorAll('fieldset.payment-methods > div')
 const paymentMethodField = document.querySelector('#payment')
+const ccNumField = document.querySelector('#cc-num')
+const zipCodeField = document.querySelector('#zip')
+const cvvField = document.querySelector('#cvv')
 
 // ###############################################
 // bikin function untuk ubah2 display value-nya
@@ -25,6 +29,7 @@ const paymentMethodField = document.querySelector('#payment')
 
 nameField.value = ''
 nameField.focus()
+emailField.value = ''
 jobRoleField.value = ''
 otherJobRoleField.value = ''
 otherJobRoleField.style.display = 'none'
@@ -48,6 +53,10 @@ for (let i = 1; i < paymentTypes.length; i++) {
         paymentDiv.style.display = 'none'
     }
 }
+
+ccNumField.value = ''
+zipCodeField.value = ''
+cvvField.value = ''
 
 /**
  * ****************************************
@@ -115,11 +124,47 @@ paymentMethodField.addEventListener('change', (event) => {
 })
 
 form.addEventListener('submit', (event) => {
-    const name = nameField.value 
-    const regexNameField = /[a-z]+/gi
 
     // 1. The "Name" field cannot be blank or empty.
-    // nameField.value
-    alert(regexNameField.test(name))
+    const name = nameField.value
+    const regexName = /^[^\s]+[a-z0-9 .]+$/gi // Andy Hartono, Andy H., Andy the 2nd
+    const isNameValid = regexName.test(name)
+    
+    // 2. The "Email Address" field must contain a validly formatted email address
+    const email = emailField.value
+    const regexEmail = /^[\w.-]+@[\w.]+$/gi // 12andy@sol.com, andy12@sol.co.id, a.hartono@sol.id, andy-h@sol.net, andy_h@satu.kaj.or.id, andy_h@1.kaj.or.id
+    const isEmailValid = regexEmail.test(email)
+    
+    // 3. The "Register for Activities" section must have at least one activity selected
+    const isActivitySelected = activitiesCost.textContent !== 'Total: $0'
+
+    // 4. If and only if credit card is the selected payment method
+    let isPaymentMethodValid = false
+
+    if (paymentMethodField.value === 'credit-card') {
+        const ccNum = ccNumField.value
+        const regexCcNum = /^\d{13,16}$/gi
+
+        const zipCode = zipCodeField.value
+        const regexZipCode = /^\d{5}$/gi
+
+        const cvv = cvvField.value
+        const regexCvv = /^\d{3}$/gim
+
+        isPaymentMethodValid = regexCcNum.test(ccNum) &&
+                               regexZipCode.test(zipCode) &&
+                               regexCvv.test(cvv)
+    }
+    else {
+        isPaymentMethodValid = true
+    }
+    
+    if (isNameValid && isEmailValid && isActivitySelected && isPaymentMethodValid) {
+        alert('Congratulations, you are registered!!')
+    }
+    else {
+        event.preventDefault()
+        alert('Oops... at least one of the required fields are not filled correctly. Please check the above fields before trying to submit the data')
+    }
 
 })
