@@ -92,18 +92,18 @@ tshirtDesignField.addEventListener('change', (event) => {
 activitiesFieldSet.addEventListener('change', (event) => {
     // 1. extract the Total Activities Cost
     const txtTotalActivitiesCost = activitiesCost.textContent
-    const numPortionRegex = /\d+/ // extract only the number portion of 'Total: $0'
-    let numTotalActivitiesCost = Number(txtTotalActivitiesCost.match(numPortionRegex))
+    const regexNumPortion = /\d+/ // extract only the number portion of 'Total: $0'
+    let numTotalActivitiesCost = Number(txtTotalActivitiesCost.match(regexNumPortion))
     
     // 2. extract the Selected Activity Cost
     const selectedActivityCost = Number(event.target.dataset.cost)
 
     // 3. if selected add the selectedActivityCost, and if deselected then subtract
     if (event.target.checked) {
-        activitiesCost.textContent = `Total: $ ${numTotalActivitiesCost + selectedActivityCost}`
+        activitiesCost.textContent = `Total: $${numTotalActivitiesCost + selectedActivityCost}`
     }
     else {
-        activitiesCost.textContent = `Total: $ ${numTotalActivitiesCost - selectedActivityCost}`
+        activitiesCost.textContent = `Total: $${numTotalActivitiesCost - selectedActivityCost}`
     }
 })
 
@@ -125,35 +125,39 @@ paymentMethodField.addEventListener('change', (event) => {
 
 form.addEventListener('submit', (event) => {
 
-    // 1. The "Name" field cannot be blank or empty.
-    const name = nameField.value
-    const regexName = /^[^\s]+[a-z0-9 .]+$/gi // Andy Hartono, Andy H., Andy the 2nd
-    const isNameValid = regexName.test(name)
-    
-    // 2. The "Email Address" field must contain a validly formatted email address
-    const email = emailField.value
-    const regexEmail = /^[\w.-]+@[\w.]+$/gi // 12andy@sol.com, andy12@sol.co.id, a.hartono@sol.id, andy-h@sol.net, andy_h@satu.kaj.or.id, andy_h@1.kaj.or.id
-    const isEmailValid = regexEmail.test(email)
-    
-    // 3. The "Register for Activities" section must have at least one activity selected
-    const isActivitySelected = activitiesCost.textContent !== 'Total: $0'
+    function validate(element, prop, regex) {
+        const toBeTested = element[prop]
+        return regex.test(toBeTested)
+    }
 
-    // 4. If and only if credit card is the selected payment method
+    // The "Name" field cannot be blank or empty.
+    // ex: Andy Hartono, Andy H., Andy the 2nd
+    const isNameValid = validate(nameField, 'value', /^[^\s]+[a-z0-9 .]+$/gi)
+    
+    // The "Email Address" field must contain a validly formatted email address
+    // ex: 12andy@sol.com, andy12@sol.co.id, a.hartono@sol.id, andy-h@sol.net, andy_h@satu.kaj.or.id, andy_h@1.kaj.or.id
+    const isEmailValid = validate(emailField, 'value', /^[\w.-]+@[\w.]+$/gi)
+
+    // The "Register for Activities" section must have at least one activity selected
+    const isActivitySelected = validate(activitiesCost, 'textContent', /^total: \$[1-9]\d+$/gmi)
+
+    // Validate cc, zip & cvv if credit card is the selected payment method
     let isPaymentMethodValid = false
 
     if (paymentMethodField.value === 'credit-card') {
-        const ccNum = ccNumField.value
-        const regexCcNum = /^\d{13,16}$/gi
+        
+        // The "Card number" field must contain a 13 - 16 digit credit card number with no dashes or spaces
+        const isCcNumValid = validate(ccNumField, 'value', /^\d{13,16}$/gi)
 
-        const zipCode = zipCodeField.value
-        const regexZipCode = /^\d{5}$/gi
+        // The "Zip code" field must contain a 5 digit number
+        const isZipCodeValid = validate(zipCodeField, 'value', /^\d{5}$/gi)
+        
+        // The "CVV" field must contain a 3 digit number
+        const isCvvValid = validate(cvvField, 'value', /^\d{3}$/gim)
 
-        const cvv = cvvField.value
-        const regexCvv = /^\d{3}$/gim
-
-        isPaymentMethodValid = regexCcNum.test(ccNum) &&
-                               regexZipCode.test(zipCode) &&
-                               regexCvv.test(cvv)
+        isPaymentMethodValid = isCcNumValid &&
+                               isZipCodeValid &&
+                               isCvvValid
     }
     else {
         isPaymentMethodValid = true
@@ -166,5 +170,18 @@ form.addEventListener('submit', (event) => {
         event.preventDefault()
         alert('Oops... at least one of the required fields are not filled correctly. Please check the above fields before trying to submit the data')
     }
+})
 
+document.addEventListener('focusin', (event) => {
+    if (event.target.type === 'checkbox') {
+        const checkboxLabel = event.target.parentNode
+        checkboxLabel.className = 'focus'
+    }
+})
+
+document.addEventListener('focusout', (event) => {
+    if (event.target.type === 'checkbox') {
+        const checkboxLabel = event.target.parentNode
+        checkboxLabel.className = ''
+    }
 })
