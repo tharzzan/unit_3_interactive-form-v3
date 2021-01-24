@@ -8,7 +8,6 @@ const tshirtColorField = document.querySelector('#color')
 const activitiesFieldSet = document.querySelector('#activities')
 const activitiesCheckboxes = activitiesFieldSet.querySelectorAll('input')
 const activitiesCost = document.querySelector('#activities-cost')
-// const paymentFieldset = document.querySelector('fieldset.payment-methods')
 const paymentTypes = document.querySelectorAll('fieldset.payment-methods > div')
 const paymentMethodField = document.querySelector('#payment')
 const ccNumField = document.querySelector('#cc-num')
@@ -69,7 +68,7 @@ jobRoleField.addEventListener('change', (event) => {
     event.target.value === 'other' ? otherJobRoleField.style.display = 'inherit' : otherJobRoleField.style.display = 'none'
 })
 
-tshirtDesignField.addEventListener('change', (event) => {
+tshirtDesignField.addEventListener('change', () => {
     const colorOptions = tshirtColorField.children
     const chosenDesign = tshirtDesignField.value
     
@@ -80,31 +79,39 @@ tshirtDesignField.addEventListener('change', (event) => {
     for (let i = 0; i < colorOptions.length; i++) {
         const color = colorOptions[i]
         
-        if (color.dataset.theme === chosenDesign) {
-            color.hidden = false
-        }
-        else {
-            color.hidden = true
-        }
+        color.dataset.theme === chosenDesign ? color.hidden = false : color.hidden = true
     }
 })
 
 activitiesFieldSet.addEventListener('change', (event) => {
-    // 1. extract the Total Activities Cost
-    const txtTotalActivitiesCost = activitiesCost.textContent
-    const regexNumPortion = /\d+/ // extract only the number portion of 'Total: $0'
-    let numTotalActivitiesCost = Number(txtTotalActivitiesCost.match(regexNumPortion))
-    
-    // 2. extract the Selected Activity Cost
-    const selectedActivityCost = Number(event.target.dataset.cost)
+    const updateThe = {
+        total: () => {
+            // 1. extract the Total Activities Cost
+            const txtTotalActivitiesCost = activitiesCost.textContent
+            const regexNumPortion = /\d+/ // extract only the number portion of 'Total: $0'
+            let numTotalActivitiesCost = Number(txtTotalActivitiesCost.match(regexNumPortion))
+            
+            // 2. extract the Selected Activity Cost
+            const selectedActivityCost = Number(event.target.dataset.cost)
 
-    // 3. if selected add the selectedActivityCost, and if deselected then subtract
-    if (event.target.checked) {
-        activitiesCost.textContent = `Total: $${numTotalActivitiesCost + selectedActivityCost}`
+            // 3. if selected then add the selectedActivityCost, and if deselected then subtract
+            if (event.target.checked) {
+                activitiesCost.textContent = `Total: $${numTotalActivitiesCost + selectedActivityCost}`
+            }
+            else {
+                activitiesCost.textContent = `Total: $${numTotalActivitiesCost - selectedActivityCost}`
+            }
+        },
+        conflictingEvent: () => {
+            // update here
+        }
     }
-    else {
-        activitiesCost.textContent = `Total: $${numTotalActivitiesCost - selectedActivityCost}`
-    }
+
+    updateThe.total()
+
+    // #######################################
+    // lanjut disini. tambah function untuk disable, kalau ada event yang conflict
+
 })
 
 paymentMethodField.addEventListener('change', (event) => {
@@ -127,7 +134,36 @@ form.addEventListener('submit', (event) => {
 
     function validate(element, prop, regex) {
         const toBeTested = element[prop]
-        return regex.test(toBeTested)
+        const isValid = regex.test(toBeTested)
+
+        !isValid ? showHint(element) : hideHint(element)
+        return isValid
+    }
+
+    function showHint(element) {
+        const parentEl = element.parentNode
+
+        if (element.id === 'activities-cost') {
+            parentEl.className = 'activities not-valid'
+            element.nextElementSibling.style.display = 'inherit'
+        }
+        else {
+            parentEl.className = 'not-valid'
+            parentEl.lastElementChild.style.display = 'inherit'
+        }
+    }
+
+    function hideHint(element) {
+        const parentEl = element.parentNode
+
+        if (element.id === 'activities-cost') {
+            parentEl.className = 'activities valid'
+            element.nextElementSibling.style.display = 'none'
+        }
+        else {
+            parentEl.className = 'valid'
+            parentEl.lastElementChild.style.display = 'none'
+        }
     }
 
     // The "Name" field cannot be blank or empty.
