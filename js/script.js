@@ -14,10 +14,54 @@ const ccNumField = document.querySelector('#cc-num')
 const zipCodeField = document.querySelector('#zip')
 const cvvField = document.querySelector('#cvv')
 
-// ###############################################
-// bikin function untuk ubah2 display value-nya
-// ###############################################
+/**
+ * ****************************************
+ * Functions
+ * ****************************************
+ */
 
+function validate(element, prop, regex) {
+    const toBeTested = element[prop]
+    const isValid = regex.test(toBeTested)
+
+    !isValid ? showHint(element) : hideHint(element)
+    return isValid
+}
+
+function showHint(element) {
+    const parentEl = element.parentNode
+
+    if (element.id === 'activities-cost') {
+        parentEl.className = 'activities not-valid'
+        element.nextElementSibling.style.display = 'inherit'
+    }
+    else {
+        parentEl.className = 'not-valid'
+        parentEl.lastElementChild.style.display = 'inherit'
+    }
+}
+
+function hideHint(element) {
+    const parentEl = element.parentNode
+
+    if (element.id === 'activities-cost') {
+        parentEl.className = 'activities valid'
+        element.nextElementSibling.style.display = 'none'
+    }
+    else {
+        parentEl.className = 'valid'
+        parentEl.lastElementChild.style.display = 'none'
+    }
+}
+
+function emailAddressErrMsg() {
+    if (emailField.value === '') {
+        emailField.nextElementSibling.textContent = 'Email address must be filled in'
+    }
+    else {
+        emailField.nextElementSibling.textContent = 'Email address must be formatted correctly'       
+    }
+}
 
 /**
  * ****************************************
@@ -29,11 +73,13 @@ const cvvField = document.querySelector('#cvv')
 nameField.value = ''
 nameField.focus()
 emailField.value = ''
+emailAddressErrMsg()
 jobRoleField.value = ''
 otherJobRoleField.value = ''
 otherJobRoleField.style.display = 'none'
 tshirtDesignField.value = ''
 tshirtColorField.disabled = true
+tshirtColorField.value = tshirtColorField.children[0].value
 
 for (let i = 0; i < activitiesCheckboxes.length; i++) {
     activitiesCheckboxes[i].checked = false
@@ -76,10 +122,19 @@ tshirtDesignField.addEventListener('change', () => {
     tshirtColorField.value = ''
     
     // display only available colors matching the chosenDesign
-    for (let i = 0; i < colorOptions.length; i++) {
+    for (let i = 1; i < colorOptions.length; i++) {
         const color = colorOptions[i]
         
-        color.dataset.theme === chosenDesign ? color.hidden = false : color.hidden = true
+        if (color.dataset.theme === chosenDesign) {
+            color.hidden = false
+
+            if (tshirtColorField.value === '') {
+                tshirtColorField.value = color.value
+            }
+        }
+        else {
+            color.hidden = true
+        }
     }
 })
 
@@ -103,14 +158,35 @@ activitiesFieldSet.addEventListener('change', (event) => {
             }
         },
         conflictingEvent: () => {
-            // update here
+            // 1. store the targetName and targetDayAndTime  
+            const targetName = event.target.name
+            const targetDayAndTime = event.target.dataset.dayAndTime
+
+            // 2. loop thru all the activities & disable those that have the same day and time
+            for (let i = 0; i < activitiesCheckboxes.length; i++) {
+                const thisActivity = activitiesCheckboxes[i]
+                
+                if ((thisActivity.name !== targetName) && 
+                    (thisActivity.dataset.dayAndTime === targetDayAndTime)) {
+                    
+                    if (thisActivity.disabled) {
+                        thisActivity.disabled = false
+                        thisActivity.parentNode.className = ''
+                    }
+                    else {
+                        thisActivity.disabled = true
+                        thisActivity.parentNode.className = 'disabled'
+                    }
+                }
+                else {
+                    continue
+                }
+            }
         }
     }
 
     updateThe.total()
-
-    // #######################################
-    // lanjut disini. tambah function untuk disable, kalau ada event yang conflict
+    updateThe.conflictingEvent()
 
 })
 
@@ -132,47 +208,13 @@ paymentMethodField.addEventListener('change', (event) => {
 
 form.addEventListener('submit', (event) => {
 
-    function validate(element, prop, regex) {
-        const toBeTested = element[prop]
-        const isValid = regex.test(toBeTested)
-
-        !isValid ? showHint(element) : hideHint(element)
-        return isValid
-    }
-
-    function showHint(element) {
-        const parentEl = element.parentNode
-
-        if (element.id === 'activities-cost') {
-            parentEl.className = 'activities not-valid'
-            element.nextElementSibling.style.display = 'inherit'
-        }
-        else {
-            parentEl.className = 'not-valid'
-            parentEl.lastElementChild.style.display = 'inherit'
-        }
-    }
-
-    function hideHint(element) {
-        const parentEl = element.parentNode
-
-        if (element.id === 'activities-cost') {
-            parentEl.className = 'activities valid'
-            element.nextElementSibling.style.display = 'none'
-        }
-        else {
-            parentEl.className = 'valid'
-            parentEl.lastElementChild.style.display = 'none'
-        }
-    }
-
     // The "Name" field cannot be blank or empty.
     // ex: Andy Hartono, Andy H., Andy the 2nd
     const isNameValid = validate(nameField, 'value', /^[^\s]+[a-z0-9 .]+$/gi)
     
     // The "Email Address" field must contain a validly formatted email address
     // ex: 12andy@sol.com, andy12@sol.co.id, a.hartono@sol.id, andy-h@sol.net, andy_h@satu.kaj.or.id, andy_h@1.kaj.or.id
-    const isEmailValid = validate(emailField, 'value', /^[\w.-]+@[\w.]+$/gi)
+    const isEmailValid = validate(emailField, 'value', /^[\w.-]+@[\w.]+\.[\w]+$/gi)
 
     // The "Register for Activities" section must have at least one activity selected
     const isActivitySelected = validate(activitiesCost, 'textContent', /^total: \$[1-9]\d+$/gmi)
@@ -207,6 +249,16 @@ form.addEventListener('submit', (event) => {
         alert('Oops... at least one of the required fields are not filled correctly. Please check the above fields before trying to submit the data')
     }
 })
+
+document.addEventListener('keyup', (event) => {
+    if (event.target.id === 'email') {
+        emailAddressErrMsg()
+
+        // The "Email Address" field must contain a validly formatted email address
+        validate(emailField, 'value', /^[\w.-]+@[\w.]+\.[\w]+$/gi)
+    }
+})
+
 
 document.addEventListener('focusin', (event) => {
     if (event.target.type === 'checkbox') {
